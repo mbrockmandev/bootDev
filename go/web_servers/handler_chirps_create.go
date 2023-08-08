@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -31,7 +32,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	chirp, err := cfg.DB.SaveJSONToFile(cleaned, "./database.json")
+	chirp, err := cfg.DB.CreateChirp(cleaned)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create chirp")
 		return
@@ -69,3 +70,4 @@ func getCleanedBody(body string, badWords map[string]struct{}) string {
 	cleaned := strings.Join(words, " ")
 	return cleaned
 }
+
