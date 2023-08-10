@@ -3,25 +3,24 @@ package auth
 import (
 	"chirpy/internal/database"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// takes a user, expiry, and generates a signed token
 func GenerateJwt(user database.User, expiresIn time.Duration) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
-	// claims := jwt.MapClaims{
-	// 	"id":    user.ID,
-	// 	"email": user.Email,
-	// 	"exp":   time.Now().Add(expiresIn).Unix(),
-	// }
+
 	claims := jwt.RegisteredClaims{
 		Issuer:    "chirpy",
-		Subject:   string(user.ID),
-		ExpiresAt: jwt.NewNumericDate(time.Unix(1516239022, 0)),
-		NotBefore: &jwt.NumericDate{},
-		IssuedAt:  ,
-		ID:        "",
+		Subject:   strconv.Itoa(user.ID),
+		Audience:  []string{},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ID:        "1",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
