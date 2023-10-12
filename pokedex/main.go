@@ -11,6 +11,7 @@ func main() {
 }
 
 func mainLoop() {
+	cfg := &Config{Previous: "", Next: ""}
 	s := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -23,10 +24,14 @@ func mainLoop() {
 			fmt.Println("Please enter a command.")
 			continue
 		} else if text == "help" {
-			cmdHelp()
+			cmdHelp(cfg)
 		} else if text == "exit" {
-			cmdExit()
+			cmdExit(cfg)
 			break
+		} else if text == "map" {
+			cmdMap(cfg)
+		} else if text == "mapb" {
+			cmdMapb(cfg)
 		}
 	}
 }
