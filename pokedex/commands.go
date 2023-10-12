@@ -27,11 +27,13 @@ func cmdHelp() error {
 	cmds := getAllAppCommands()
 	fmt.Print("Welcome to the Pokedex!\nUsage:\n\n")
 	for _, v := range cmds {
-		fmt.Printf("%s:%s", v.name, v.description)
+		fmt.Printf("\n%s: %s", v.name, v.description)
 	}
+	fmt.Println()
 	return nil
 }
 
 func cmdExit() error {
+	fmt.Println("Thanks for using the Pokedex!")
 	return nil
 }

@@ -7,12 +7,11 @@ import (
 )
 
 func main() {
-
+	mainLoop()
 }
 
 func mainLoop() {
 	s := bufio.NewScanner(os.Stdin)
-	cmds := getAllAppCommands()
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -23,10 +22,11 @@ func mainLoop() {
 		if len(text) == 0 {
 			fmt.Println("Please enter a command.")
 			continue
-		}
-
-		if  {
-
+		} else if text == "help" {
+			cmdHelp()
+		} else if text == "exit" {
+			cmdExit()
+			break
 		}
 	}
 }
