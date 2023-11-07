@@ -1,9 +1,9 @@
-package main
+package commands
 
 import (
 	"fmt"
 
-	"github.com/mbrockmandev/bootDev/pokedex/pokeapi"
+	"github.com/mbrockmandev/bootDev/pokedex/internal/pokeapi"
 )
 
 type appCommand struct {
@@ -22,46 +22,53 @@ func getAllAppCommands() map[string]appCommand {
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
-			callback:    cmdHelp,
+			callback:    Help,
 		},
 		"exit": {
 			name:        "exit",
 			description: "Exit the Pokedex",
-			callback:    cmdExit,
+			callback:    Exit,
 		},
 		"map": {
 			name:        "map",
 			description: "Display the names of locations in the Pokemon world",
-			callback:    cmdMap,
+			callback:    Map,
 		},
 		"mapb": {
 			name:        "mapb",
 			description: "Display the names of locations in the Pokemon world (previous)",
-			callback:    cmdMapb,
+			callback:    Mapb,
 		},
 	}
 }
 
-func cmdHelp(cfg *Config) error {
+func Help(cfg *Config) error {
 	cmds := getAllAppCommands()
-	fmt.Print("Welcome to the Pokedex!\nUsage:\n\n")
+	fmt.Print("Welcome to the Pokedex!\nUsage:\n")
 	for _, v := range cmds {
-		fmt.Printf("\n%s: %s", v.name, v.description)
+		fmt.Printf("\n > %s: %s", v.name, v.description)
 	}
+	fmt.Println()
 	fmt.Println()
 	return nil
 }
 
-func cmdExit(cfg *Config) error {
+func Exit(cfg *Config) error {
 	fmt.Println("Thanks for using the Pokedex!")
 	return nil
 }
 
-func cmdMap(cfg *Config) error {
+func Map(cfg *Config) error {
 	res, err := pokeapi.GetNext(cfg.Next)
 	if err != nil {
 		return err
 	}
+
+	fmt.Println()
+	for _, v := range res.Results {
+		fmt.Println(v.Name)
+	}
+	fmt.Println()
 
 	if res.Previous != nil {
 		cfg.Previous = *res.Previous
@@ -73,11 +80,17 @@ func cmdMap(cfg *Config) error {
 	return nil
 }
 
-func cmdMapb(cfg *Config) error {
+func Mapb(cfg *Config) error {
 	res, err := pokeapi.GetPrevious(cfg.Previous)
 	if err != nil {
 		return err
 	}
+
+	fmt.Println()
+	for _, v := range res.Results {
+		fmt.Println(v.Name)
+	}
+	fmt.Println()
 
 	if res.Previous != nil {
 		cfg.Previous = *res.Previous

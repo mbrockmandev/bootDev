@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/mbrockmandev/bootDev/pokedex/internal/commands"
 )
 
 func main() {
@@ -11,7 +13,7 @@ func main() {
 }
 
 func mainLoop() {
-	cfg := &Config{Previous: "", Next: ""}
+	cfg := &commands.Config{Previous: "", Next: ""}
 	s := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -24,14 +26,16 @@ func mainLoop() {
 			fmt.Println("Please enter a command.")
 			continue
 		} else if text == "help" {
-			cmdHelp(cfg)
+			commands.Help(cfg)
 		} else if text == "exit" {
-			cmdExit(cfg)
+			commands.Exit(cfg)
 			break
 		} else if text == "map" {
-			cmdMap(cfg)
+			commands.Map(cfg)
 		} else if text == "mapb" {
-			cmdMapb(cfg)
+			commands.Mapb(cfg)
+		} else {
+			fmt.Println("Command not recognized. Try again. Please enter \"help\" for a list of commands. ")
 		}
 	}
 }

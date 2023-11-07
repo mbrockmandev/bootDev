@@ -19,7 +19,6 @@ type PokeApiRes struct {
 	} `json:"results,omitempty"`
 }
 
-// need to call to pokeapi location area endpoint to get location areas
 func GetNext(nextUrl string) (*PokeApiRes, error) {
 	var res *http.Response
 	var err error
@@ -35,7 +34,11 @@ func GetNext(nextUrl string) (*PokeApiRes, error) {
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if res.StatusCode > 299 {
-		return nil, fmt.Errorf("response failed with status code: %d and \nbody: %s\n", res.StatusCode, body)
+		return nil, fmt.Errorf(
+			"response failed with status code: %d and \nbody: %s\n",
+			res.StatusCode,
+			body,
+		)
 	}
 	if err != nil {
 		return nil, err
@@ -62,7 +65,11 @@ func GetPrevious(previousUrl string) (*PokeApiRes, error) {
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if res.StatusCode > 299 {
-		return nil, fmt.Errorf("response failed with status code: %d and \nbody: %s\n", res.StatusCode, body)
+		return nil, fmt.Errorf(
+			"response failed with status code: %d and \nbody: %s\n",
+			res.StatusCode,
+			body,
+		)
 	}
 	if err != nil {
 		return nil, err
