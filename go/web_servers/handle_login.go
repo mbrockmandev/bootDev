@@ -1,11 +1,11 @@
 package main
 
 import (
+	"chirpy/internal/auth"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
-
-	"chirpy/internal/auth"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +15,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
 	}
 	type response struct {
+		Id    int    `json:"id"`
+		Email string `json:"email"`
 		Token string `json:"token"`
 	}
 
@@ -28,7 +30,12 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := cfg.DB.GetUserByEmail(params.Email)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't get user")
+		fmt.Println("params: ", params.Email, params.Password, params.ExpiresInSeconds)
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Sprintf("Couldn't get user: %v", err),
+		)
 		return
 	}
 
@@ -38,14 +45,25 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateJwt(user, time.Second*time.Duration(params.ExpiresInSeconds))
+	expiresIn := params.ExpiresInSeconds
+	dayInSeconds := 86400 // 24 hours
+	if expiresIn <= 0 || expiresIn > dayInSeconds {
+		expiresIn = dayInSeconds
+	}
 
+	token, err := auth.GenerateJwt(user, time.Second*time.Duration(expiresIn))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't generate token")
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			fmt.Sprintf("Couldn't generate token %v", err),
+		)
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, response{
+		Id:    user.ID,
+		Email: user.Email,
 		Token: token,
 	})
 }

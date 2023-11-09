@@ -10,21 +10,20 @@ import (
 )
 
 // takes a user, expiry, and generates a signed token
-func GenerateJwt(user database.User, expiresIn time.Duration) (string, error) {
+func GenerateJwt(user database.User, expiresInSeconds time.Duration) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 
 	claims := jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		Subject:   strconv.Itoa(user.ID),
 		Audience:  []string{},
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresInSeconds)),
 		NotBefore: jwt.NewNumericDate(time.Now()),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ID:        "1",
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(jwtSecret)
+	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return "", err
 	}

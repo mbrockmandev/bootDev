@@ -1,13 +1,11 @@
-
 package main
 
 import (
+	"chirpy/internal/auth"
+	"chirpy/internal/database"
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"chirpy/internal/auth"
-	"chirpy/internal/database"
 )
 
 type User struct {
@@ -57,4 +55,3 @@ func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, r *http.Request)
 		},
 	})
 }
-
