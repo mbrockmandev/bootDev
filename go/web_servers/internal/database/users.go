@@ -87,3 +87,4 @@ func (db *DB) UpdateUser(id int, email, hashedPassword string) (User, error) {
 	}
 	return user, nil
 }
+
