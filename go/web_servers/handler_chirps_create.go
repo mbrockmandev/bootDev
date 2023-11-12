@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -70,4 +69,3 @@ func getCleanedBody(body string, badWords map[string]struct{}) string {
 	cleaned := strings.Join(words, " ")
 	return cleaned
 }
-

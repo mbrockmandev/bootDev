@@ -1,13 +1,11 @@
 package main
 
 import (
+	"chirpy/internal/database"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-
-	"chirpy/internal/database"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
@@ -16,20 +14,21 @@ import (
 type apiConfig struct {
 	fileserverHits int
 	DB             *database.DB
+	jwtSecret      string
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println(err.Error())
-		log.Fatal("Error loading .env file")
+	const filepathRoot = "."
+	const port = "8080"
+
+	godotenv.Load(".env")
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
 	}
 
-	filepathRoot := os.Getenv("FILE_ROOT")
-	port := os.Getenv("PORT")
-	dbPath := os.Getenv("DB_PATH")
-
-	db, err := database.NewDB(dbPath)
+	db, err := database.NewDB("database.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,6 +45,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: 0,
 		DB:             db,
+		jwtSecret:      jwtSecret,
 	}
 
 	router := chi.NewRouter()
@@ -55,16 +55,18 @@ func main() {
 
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/healthz", handlerReadiness)
+	apiRouter.Get("/reset", apiCfg.handlerReset)
 
+	apiRouter.Post("/revoke", apiCfg.handlerRevoke)
+	apiRouter.Post("/refresh", apiCfg.handlerRefresh)
 	apiRouter.Post("/login", apiCfg.handlerLogin)
+
 	apiRouter.Post("/users", apiCfg.handlerUsersCreate)
-	apiRouter.Put("/users", apiCfg.handleUserUpdate)
-	apiRouter.Post("/api/refresh", apiCfg.handleUserRefresh)
+	apiRouter.Put("/users", apiCfg.handlerUsersUpdate)
 
 	apiRouter.Post("/chirps", apiCfg.handlerChirpsCreate)
 	apiRouter.Get("/chirps", apiCfg.handlerChirpsRetrieve)
 	apiRouter.Get("/chirps/{chirpID}", apiCfg.handlerChirpsGet)
-
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()

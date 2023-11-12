@@ -78,13 +78,12 @@ func (db *DB) UpdateUser(id int, email, hashedPassword string) (User, error) {
 
 	user.Email = email
 	user.HashedPassword = hashedPassword
-
 	dbStructure.Users[id] = user
 
 	err = db.writeDB(dbStructure)
 	if err != nil {
 		return User{}, err
 	}
+
 	return user, nil
 }
-

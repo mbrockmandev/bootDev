@@ -3,21 +3,19 @@ package main
 import (
 	"chirpy/internal/auth"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	type response struct {
-		Id    int    `json:"id"`
-		Email string `json:"email"`
-		Token string `json:"token"`
+		User
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -30,12 +28,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 
 	user, err := cfg.DB.GetUserByEmail(params.Email)
 	if err != nil {
-		fmt.Println("params: ", params.Email, params.Password, params.ExpiresInSeconds)
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			fmt.Sprintf("Couldn't get user: %v", err),
-		)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get user")
 		return
 	}
 
@@ -45,25 +38,34 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiresIn := params.ExpiresInSeconds
-	dayInSeconds := 86400 // 24 hours
-	if expiresIn <= 0 || expiresIn > dayInSeconds {
-		expiresIn = dayInSeconds
+	accessToken, err := auth.MakeJWT(
+		user.ID,
+		cfg.jwtSecret,
+		time.Hour,
+		auth.TokenTypeAccess,
+	)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create access JWT")
+		return
 	}
 
-	token, err := auth.GenerateJwt(user, time.Second*time.Duration(expiresIn))
+	refreshToken, err := auth.MakeJWT(
+		user.ID,
+		cfg.jwtSecret,
+		time.Hour*24*30*6,
+		auth.TokenTypeRefresh,
+	)
 	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			fmt.Sprintf("Couldn't generate token %v", err),
-		)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh JWT")
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, response{
-		Id:    user.ID,
-		Email: user.Email,
-		Token: token,
+		User: User{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+		Token:        accessToken,
+		RefreshToken: refreshToken,
 	})
 }

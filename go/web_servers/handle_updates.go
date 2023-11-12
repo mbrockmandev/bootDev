@@ -3,93 +3,60 @@ package main
 import (
 	"chirpy/internal/auth"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"strings"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
-func (cfg *apiConfig) handleUserUpdate(w http.ResponseWriter, r *http.Request) {
-	bearerToken := r.Header.Get("Authorization")
-	if !isValidBearerToken(bearerToken) {
-		respondWithError(w, http.StatusUnauthorized, "Invalid bearer token")
-		return
+func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+	type response struct {
+		User
 	}
 
-	tokenString := strings.TrimPrefix(bearerToken, "Bearer ")
-	// tokenString := bearerToken[7:] // check the number?
-
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		&jwt.RegisteredClaims{},
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		},
-	)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid bearer token")
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT")
+		return
+	}
+	subject, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
 		return
 	}
 
-	if claims, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
-		userId, err := strconv.Atoi(claims.Subject)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't get user id")
-			return
-		}
-
-		type parameters struct {
-			Password         string `json:"password"`
-			Email            string `json:"email"`
-			ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
-		}
-
-		var params parameters
-		err = json.NewDecoder(r.Body).Decode(&params)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters")
-			return
-		}
-
-		user, err := cfg.DB.GetUser(userId)
-		if err != nil {
-			respondWithError(
-				w,
-				http.StatusInternalServerError,
-				fmt.Sprintf("Couldn't get user OK? %v", err),
-			)
-			return
-		}
-
-		hashedPw, err := auth.HashPassword(params.Password)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't generate hashed password")
-			return
-		}
-
-		user, err = cfg.DB.UpdateUser(userId, params.Email, hashedPw)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't update user")
-			return
-		}
-
-		respondWithJSON(w, http.StatusOK,
-			User{
-				ID:    user.ID,
-				Email: user.Email,
-			},
-		)
-	} else {
-		respondWithError(w, http.StatusUnauthorized, "Invalid bearer token")
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters")
+		return
 	}
-}
 
-func isValidBearerToken(bearerToken string) bool {
-	if len(bearerToken) < 7 || bearerToken[:7] != "Bearer " {
-		return false
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password")
+		return
 	}
-	return true
+
+	userIDInt, err := strconv.Atoi(subject)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't parse user ID")
+		return
+	}
+
+	user, err := cfg.DB.UpdateUser(userIDInt, params.Email, hashedPassword)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create user")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		User: User{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+	})
 }
